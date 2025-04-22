@@ -8,6 +8,7 @@ import {
 import { FirebaseService } from "./firebase.interface";
 
 const app = initializeApp(JSON.parse(process.env.FIREBASE_CONFIG ?? "{}"));
+console.log("Firebase app initialized", process.env.FIREBASE_CONFIG);
 const db = getFirestore(app);
 
 export { app, db };
