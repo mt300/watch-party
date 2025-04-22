@@ -1,32 +1,18 @@
 import { Icon } from "@iconify-icon/react";
-import type { MetaFunction } from "@remix-run/node";
-import { DocumentData, setDoc, doc, Timestamp } from "firebase/firestore";
-import React, { useEffect, useRef, useState } from "react";
-import ReactPlayer from "react-player";
-import { OnProgressProps } from "react-player/base";
-import { useSearchParams } from "react-router-dom";
+import React, { useState } from "react";
 import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import { v4 as uuidv4 } from "uuid";
-import { Button } from "~/components/ui/button";
-import ToggleIcon from "~/components/ui/toggle-icon";
-import useDebounce from "~/hooks/use-debounce";
-import humanizeSeconds from "~/lib/text";
+
 import { cn } from "~/lib/utils";
 import { db } from "~/services/firebase";
+import { setDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 export default function Create() {
     const navigate = useNavigate();
-    const [room, setRoom] = useState<DocumentData>();
     const [url, setUrl] = useState<string>("");
-    const [videos, setVideos] = useState<DocumentData[]>([]);
     const [name, setName] = useState<string>("");
     
-    
-
-    const fetchNewRoom = async (id: string) => {};
-
     const handleAddUrl = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
@@ -49,7 +35,6 @@ export default function Create() {
             return;
         }
         const id = uuidv4();
-        setRoom({ id, url, name });
         try{
             // console.log("Saving on firebase", {id, url, name});
             await setDoc(doc(db, "sessions", id), {id, url, name, timestamp: 0, playing: false, updatedAt: Date.now()});
@@ -66,9 +51,6 @@ export default function Create() {
         }
     };
   
-    
-    
-    
     
     return (
         <div className="container mx-auto root">

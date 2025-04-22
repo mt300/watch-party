@@ -32,8 +32,7 @@ export default function WatchPage() {
 
   useEffect(() => {
     const sessionRef = doc(db, "sessions", sessionId??'');
-    // console.log("🔥 Conectando ao Firestore para a sessão:", sessionRef.firestore.toJSON());
-    // Obtém estado inicial
+    // Get initial state from Firestore
     getDoc(sessionRef).then((docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as PlayerState;
@@ -42,26 +41,33 @@ export default function WatchPage() {
       }
     });
 
-    // Escuta atualizações do Firestore
+    // Listen for changes in Firestore
     const unsub = onSnapshot(sessionRef, (docSnap) => {
       if (!docSnap.exists()) return;
       const data = docSnap.data() as PlayerState;
 
-      // Evita sobrescrever estados locais com dados atrasados
-      if (Math.abs(data.timestamp - lastSyncedTime.current) > 1) {
+      // Do not update if the timestamp is too close to the last synced time
+      if (Math.abs(data.timestamp - lastSyncedTime.current) > 0.3) {
         setPlayerState(data);
       }
     });
 
     return () => unsub();
   }, [sessionId]);
+
   useEffect(() => {
-    
-   
-  })
-//   useEffect(() => {
-    
-//   }, [playerState]);
+    if (!playerRef.current || !playerState) return;
+  
+    const current = playerRef.current.getCurrentTime?.() ?? 0;
+    const expected = playerState.timestamp ?? 0;
+  
+    // If there's a big difference between the current time and the expected time, seek to the expected time
+    if (Math.abs(current - expected) > 1) {
+      console.log(`⏩ Seeking player de ${current.toFixed(1)}s para ${expected.toFixed(1)}s`);
+      playerRef.current.seekTo(expected, "seconds");
+    }
+  }, [playerState?.timestamp]);
+
   // Envia atualizações para o Firestore
   const updateSession = async (updates: Partial<PlayerState>) => {
     const sessionRef = doc(db, "sessions", sessionId);
@@ -81,6 +87,8 @@ export default function WatchPage() {
         <ReactPlayer
           ref={playerRef}
           url={`${playerState.url??''}`} // troque pela URL da sessão
+          playing={playerState.playing}
+          muted={true}
           onPlay={() => updateSession({ playing: true })}
           onPause={() => updateSession({ playing: false })}
           onSeek={(seconds) => updateSession({ timestamp: seconds })}
@@ -94,11 +102,7 @@ export default function WatchPage() {
             const seconds = Math.floor(currentTime / 1000) + (playerState.timestamp ?? 0);
             playerRef.current.seekTo(seconds ?? 0, "seconds");
             
-            if (playerState?.playing) {
-                playerRef.current.getInternalPlayer().playVideo();
-            } else {
-                playerRef.current.getInternalPlayer().pauseVideo();
-            }
+            
           }}
           controls
           width="80%"
