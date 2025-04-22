@@ -34,12 +34,15 @@ This is a collaborative “Watch Party” app that lets a distributed group of u
 
 ### Required Unit Tests
 
-- [ ] **Creating a session**. Any user should be able to create a session to watch a given Youtube video.
-- [ ] **Joining a session**. Any user should be able to join a session created by another user using the shareable session link.
-- [ ] **Playing/pausing** the video. When a participant pauses the video, it should pause for everyone. When a participant plays the video, it should start playing for everyone.
-- [ ] **“Seek”**. When someone jumps to a certain time in the video it should jump to that time for everyone.
-- [ ] **Late to the party**... Everything should stay synced even if a user joins the watch party late (e.g. the video is already playing)
-- [ ] **Player controls.** All the player controls (e.g. play, pause, and seek) should be intuitive and behave as expected.
+- [ X] **Creating a session**. Any user should be able to create a session to watch a given Youtube video.
+- [X ] **Joining a session**. Any user should be able to join a session created by another user using the shareable session link.
+- [X ] **Playing/pausing** the video. When a participant pauses the video, it should pause for everyone. When a participant plays the video, it should start playing for everyone.
+- [ X] **“Seek”**. When someone jumps to a certain time in the video it should jump to that time for everyone.
+- [ X] **Late to the party**... Everything should stay synced even if a user joins the watch party late (e.g. the video is already playing)
+- [ X] **Player controls.** All the player controls (e.g. play, pause, and seek) should be intuitive and behave as expected.
+
+
+OBS: I could not make the tests run due to an error with Remix + Vitest, but the functionalities can be used properly if you run mannually. In this kind of situation I would ask for a few more hours to understand better the problem and fix it.
 
 🚨 **Please fill out the rubric in the README with the functionality you were able to complete**
 
@@ -48,10 +51,21 @@ This is a collaborative “Watch Party” app that lets a distributed group of u
 After building the watch party app, we would like you to answer the following questions about design decisions and tradeoffs you made while building it. Please fill them out in the README along with your submission.
 
 1. **How do you guarantee that the time that a new user joins is accurate (i.e perfectly in sync with the other users in the session) and are there any edge cases where it isn’t? Think about cases that might occur with real production traffic.**
+  We keep late joiners in sync by saving the video’s current timestamp along with the exact moment it was last updated (updatedAt). When a new user joins the session, we check how much time has passed since that last update and move the video forward accordingly, so they jump to the right spot.
+  This works well in most cases, but there can be some edge cases — like small differences in users’ device clocks, network delays, or two users trying to update the video at the same time. To handle this, we ignore very small time differences (less than 0.3 seconds) and listen to real-time updates through Firestore.
+  For even better accuracy in production, we could improve this by syncing all users’ clocks or using a backend timestamp instead of each user’s local time.
 
 2. **Are there any other situations - i.e race conditions, edge cases - where one user can be out of sync with another? (Out of sync meaning that user A has the video playing or paused at some time, while user B has the video playing or paused at some other time.)**
-
+  Yes, if two users press play, pause, or seek at nearly the same time, both updates may conflict. Also network and clock delays can results on miss real time updates from database. 
 3. **How would you productionize this application to a scale where it needs to be used reliably with 1M+ DAUs and 10k people connected to a single session? Think infrastructure changes, code changes & UX changes.**
+  Infra:
+    Replace Firestone with websockets probablly, introduce a pub-sub layer (like Redis) to broadcast updates between socket instances and use some cache strategies to reduce unnecessary requests
+  UX:
+    Show real-time status feedback (e.g., “You’re 1.2s behind — resyncing...”).
+    Adaptive sync intervals based on device/network performance
+    Split session control into authoritative(controlls player) + passive users(consume passively) so the average experience would seen less chaotic and more joinfull.
+    Add visual indicators of who’s controlling the session.
+    Role-based controls (only some users can seek or pause)
 
 ### Help & Clarifications
 
